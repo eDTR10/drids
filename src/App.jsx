@@ -704,7 +704,7 @@ export default function App() {
           </button>
         </nav>
         {categories.length > 0 && (
-          <>
+          <div className="sidebar-scroll">
             <div className="sidebar-section-label category-label">
               CATEGORIES
             </div>
@@ -720,7 +720,7 @@ export default function App() {
                 </button>
               ))}
             </nav>
-          </>
+          </div>
         )}
         <div className="sidebar-bottom">
           <div className="workspace-tip">
