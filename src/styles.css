@@ -941,6 +941,15 @@ h1 > span {
   cursor: ns-resize;
   touch-action: none;
 }
+.resize-handle-corner {
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  touch-action: none;
+  z-index: 7;
+}
 .resize-handle::after {
   content: "";
   position: absolute;
@@ -960,6 +969,11 @@ h1 > span {
   width: 28px;
   height: 3px;
   transform: translate(-50%, -50%);
+}
+.resize-handle-corner::after {
+  width: 3px;
+  height: 14px;
+  transform: translate(-50%, -50%) rotate(45deg);
 }
 .resize-handle:hover::after {
   opacity: 1;

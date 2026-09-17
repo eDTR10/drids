@@ -1087,6 +1087,12 @@ export default function App() {
                         aria-label="Resize card height for all systems"
                         onPointerDown={(e) => startResize(e, "height")}
                       />
+                      <span
+                        className="resize-handle resize-handle-corner"
+                        role="separator"
+                        aria-label="Resize card width and height for all systems"
+                        onPointerDown={(e) => startResize(e, "both")}
+                      />
                     </>
                   )}
                   <a
