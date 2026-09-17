@@ -18,6 +18,7 @@ import {
   HelpCircle,
   LayoutGrid,
   List,
+  Maximize2,
   Menu,
   Moon,
   Pencil,
@@ -37,6 +38,10 @@ import {
   ChartNoAxesCombined,
 } from "lucide-react";
 import {
+  CARD_HEIGHT_MAX,
+  CARD_HEIGHT_MIN,
+  CARD_WIDTH_MAX,
+  CARD_WIDTH_MIN,
   CATEGORY_MAX_LENGTH,
   THEMES,
   ICONS,
@@ -493,6 +498,7 @@ export default function App() {
   const [resetting, setResetting] = useState(false);
   const searchRef = useRef(null);
   const importRef = useRef(null);
+  const gridRef = useRef(null);
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(workspace));
@@ -534,6 +540,41 @@ export default function App() {
     return () => document.removeEventListener("keydown", shortcut);
   }, []);
   const patch = (change) => setWorkspace((w) => ({ ...w, ...change }));
+  const startResize = (e, axis) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startWidth = workspace.cardWidth;
+    const startHeight = workspace.cardHeight;
+    let width = startWidth;
+    let height = startHeight;
+    const onMove = (ev) => {
+      const grid = gridRef.current;
+      if (!grid) return;
+      if (axis !== "height") {
+        width = Math.min(
+          CARD_WIDTH_MAX,
+          Math.max(CARD_WIDTH_MIN, startWidth + (ev.clientX - startX)),
+        );
+        grid.style.setProperty("--card-width", `${width}px`);
+      }
+      if (axis !== "width") {
+        height = Math.min(
+          CARD_HEIGHT_MAX,
+          Math.max(CARD_HEIGHT_MIN, startHeight + (ev.clientY - startY)),
+        );
+        grid.style.setProperty("--card-cover-height", `${height}px`);
+      }
+    };
+    const onUp = () => {
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+      patch({ cardWidth: width, cardHeight: height });
+    };
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+  };
   const navigate = (next, cat = "All categories") => {
     setPage(next);
     setCategory(cat);
@@ -1013,7 +1054,16 @@ export default function App() {
               </div>
             </div>
             <div
+              ref={gridRef}
               className={`systems-grid layout-${workspace.layout} columns-${workspace.columns} ${!workspace.showCovers ? "no-covers" : ""}`}
+              style={
+                workspace.layout === "custom"
+                  ? {
+                      "--card-width": `${workspace.cardWidth}px`,
+                      "--card-cover-height": `${workspace.cardHeight}px`,
+                    }
+                  : undefined
+              }
             >
               {visible.map((system) => (
                 <article
@@ -1021,6 +1071,24 @@ export default function App() {
                   style={themeVars(system.theme)}
                   key={system.id}
                 >
+                  {workspace.layout === "custom" && (
+                    <>
+                      <span
+                        className="resize-handle resize-handle-x"
+                        role="separator"
+                        aria-orientation="vertical"
+                        aria-label="Resize card width for all systems"
+                        onPointerDown={(e) => startResize(e, "width")}
+                      />
+                      <span
+                        className="resize-handle resize-handle-y"
+                        role="separator"
+                        aria-orientation="horizontal"
+                        aria-label="Resize card height for all systems"
+                        onPointerDown={(e) => startResize(e, "height")}
+                      />
+                    </>
+                  )}
                   <a
                     className="system-link"
                     href={system.url}
@@ -1184,25 +1252,40 @@ export default function App() {
                 <strong>Compact list</strong>
                 <span>Everything at a glance</span>
               </button>
+              <button
+                className={workspace.layout === "custom" ? "selected" : ""}
+                onClick={() => patch({ layout: "custom" })}
+              >
+                <Maximize2 size={24} />
+                <strong>Custom size</strong>
+                <span>Drag a card to resize</span>
+              </button>
             </div>
-            <div className="setting-row">
-              <div>
-                <strong>Cards per row</strong>
-                <p>On larger screens</p>
+            {workspace.layout === "custom" ? (
+              <p className="settings-description">
+                Drag the handle on the right or bottom edge of any card to
+                resize every card at once.
+              </p>
+            ) : (
+              <div className="setting-row">
+                <div>
+                  <strong>Cards per row</strong>
+                  <p>On larger screens</p>
+                </div>
+                <div className="segmented">
+                  {[1, 2, 3, 4].map((n) => (
+                    <button
+                      key={n}
+                      className={workspace.columns === n ? "selected" : ""}
+                      aria-pressed={workspace.columns === n}
+                      onClick={() => patch({ columns: n })}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="segmented">
-                {[1, 2, 3, 4].map((n) => (
-                  <button
-                    key={n}
-                    className={workspace.columns === n ? "selected" : ""}
-                    aria-pressed={workspace.columns === n}
-                    onClick={() => patch({ columns: n })}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
-            </div>
+            )}
             <div className="setting-row">
               <div>
                 <strong>Show cover artwork</strong>

@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  CARD_HEIGHT_MAX,
+  CARD_HEIGHT_MIN,
+  CARD_WIDTH_MAX,
+  CARD_WIDTH_MIN,
   CATEGORY_MAX_LENGTH,
   defaultWorkspace,
   isWebUrl,
@@ -70,6 +74,16 @@ test("cards-per-row accepts 1 through 4 and falls back to 3", () => {
   }
   workspace.columns = 7;
   assert.equal(validateWorkspace(workspace).columns, 3);
+});
+test("custom layout accepts a card size clamped to the min/max bounds", () => {
+  const workspace = defaultWorkspace();
+  workspace.layout = "custom";
+  workspace.cardWidth = CARD_WIDTH_MAX + 500;
+  workspace.cardHeight = CARD_HEIGHT_MIN - 500;
+  const result = validateWorkspace(workspace);
+  assert.equal(result.layout, "custom");
+  assert.equal(result.cardWidth, CARD_WIDTH_MAX);
+  assert.equal(result.cardHeight, CARD_HEIGHT_MIN);
 });
 test("unknown recent visits are dropped and empty workspaces are supported", () => {
   const workspace = defaultWorkspace();

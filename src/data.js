@@ -1,4 +1,14 @@
 export const CATEGORY_MAX_LENGTH = 60;
+export const CARD_WIDTH_MIN = 200;
+export const CARD_WIDTH_MAX = 420;
+export const CARD_WIDTH_DEFAULT = 270;
+export const CARD_HEIGHT_MIN = 70;
+export const CARD_HEIGHT_MAX = 260;
+export const CARD_HEIGHT_DEFAULT = 96;
+function clamp(value, min, max, fallback) {
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
+}
 export const THEMES = ["mint", "blue", "peach", "lilac", "sand", "rose"];
 export const ICONS = [
   "building",
@@ -148,8 +158,20 @@ export function validateWorkspace(data) {
   return {
     version: 1,
     systems,
-    layout: data.layout === "list" ? "list" : "grid",
+    layout: ["list", "custom"].includes(data.layout) ? data.layout : "grid",
     columns: [1, 2, 3, 4].includes(data.columns) ? data.columns : 3,
+    cardWidth: clamp(
+      data.cardWidth,
+      CARD_WIDTH_MIN,
+      CARD_WIDTH_MAX,
+      CARD_WIDTH_DEFAULT,
+    ),
+    cardHeight: clamp(
+      data.cardHeight,
+      CARD_HEIGHT_MIN,
+      CARD_HEIGHT_MAX,
+      CARD_HEIGHT_DEFAULT,
+    ),
     showCovers: data.showCovers !== false,
     appearance: data.appearance === "dark" ? "dark" : "light",
     recent: Array.isArray(data.recent)
@@ -164,6 +186,8 @@ export function defaultWorkspace() {
     systems: DEFAULT_SYSTEMS.map((s) => ({ ...s })),
     layout: "grid",
     columns: 3,
+    cardWidth: CARD_WIDTH_DEFAULT,
+    cardHeight: CARD_HEIGHT_DEFAULT,
     showCovers: true,
     appearance: "light",
     recent: [],
