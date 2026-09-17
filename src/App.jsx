@@ -69,6 +69,21 @@ const themeLabels = {
   sand: "sand",
   rose: "red",
 };
+function parseHash() {
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  const page = ["favorites", "recent"].includes(params.get("page"))
+    ? params.get("page")
+    : "all";
+  const category = params.get("category") || "All categories";
+  return { page, category };
+}
+function buildHash(page, category) {
+  const params = new URLSearchParams();
+  if (page !== "all") params.set("page", page);
+  if (category !== "All categories") params.set("category", category);
+  const qs = params.toString();
+  return qs ? `#${qs}` : "#";
+}
 function themeClass(theme) {
   return THEMES.includes(theme) ? `theme-${theme}` : "";
 }
@@ -465,8 +480,8 @@ export default function App() {
   const [initial] = useState(readWorkspace);
   const [workspace, setWorkspace] = useState(initial.workspace);
   const [storageError, setStorageError] = useState(initial.error);
-  const [page, setPage] = useState("all");
-  const [category, setCategory] = useState("All categories");
+  const [page, setPage] = useState(() => parseHash().page);
+  const [category, setCategory] = useState(() => parseHash().category);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("custom");
   const [modal, setModal] = useState(null);
@@ -496,6 +511,15 @@ export default function App() {
     document.documentElement.dataset.theme = workspace.appearance;
   }, [workspace.appearance]);
   useEffect(() => {
+    const onHashChange = () => {
+      const next = parseHash();
+      setPage(next.page);
+      setCategory(next.category);
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+  useEffect(() => {
     const shortcut = (e) => {
       if (
         (e.ctrlKey || e.metaKey) &&
@@ -515,6 +539,11 @@ export default function App() {
     setCategory(cat);
     setQuery("");
     setMenuOpen(false);
+    history.replaceState(null, "", buildHash(next, cat));
+  };
+  const filterByCategory = (cat) => {
+    setCategory(cat);
+    history.replaceState(null, "", buildHash(page, cat));
   };
   const favoriteCount = workspace.systems.filter((s) => s.favorite).length;
   const categories = [
@@ -942,7 +971,7 @@ export default function App() {
                   <select
                     aria-label="Filter by category"
                     value={category}
-                    onChange={(e) => setCategory(e.target.value)}
+                    onChange={(e) => filterByCategory(e.target.value)}
                   >
                     <option>All categories</option>
                     {categories.map((c) => (
