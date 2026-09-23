@@ -657,11 +657,12 @@ export default function App() {
     trackVisit(system.id);
     setRedirecting(system);
     setRedirectLeaving(false);
+    // Keep in sync with the redirect-bar progress animation in styles.css.
     setTimeout(() => {
       window.open(system.url, "_blank", "noopener,noreferrer");
       setRedirectLeaving(true);
-      setTimeout(() => setRedirecting(null), 280);
-    }, 900);
+      setTimeout(() => setRedirecting(null), 340);
+    }, 1150);
   };
   const move = (id, direction) =>
     setWorkspace((w) => {
@@ -2073,18 +2074,46 @@ export default function App() {
           role="status"
           aria-live="polite"
         >
-          <div className="redirect-portal">
-            <span className="redirect-ring ring-1" />
-            <span className="redirect-ring ring-2" />
-            <span className="redirect-ring ring-3" />
-            <span className="redirect-icon">
-              <SystemIcon name={redirecting.icon} size={36} />
+          <span className="redirect-glow" aria-hidden="true" />
+          <div className="redirect-stage">
+            <div className="redirect-streaks" aria-hidden="true">
+              {Array.from({ length: 14 }, (_, i) => (
+                <span
+                  key={i}
+                  style={{
+                    "--angle": `${(360 / 14) * i}deg`,
+                    "--delay": `${(i % 7) * 0.09}s`,
+                  }}
+                />
+              ))}
+            </div>
+            <div className="redirect-portal">
+              <span className="redirect-ring ring-1" aria-hidden="true" />
+              <span className="redirect-ring ring-2" aria-hidden="true" />
+              <span className="redirect-halo" aria-hidden="true" />
+              <svg
+                className="redirect-progress"
+                viewBox="0 0 100 100"
+                aria-hidden="true"
+              >
+                <circle className="redirect-track" cx="50" cy="50" r="45" />
+                <circle className="redirect-bar" cx="50" cy="50" r="45" />
+              </svg>
+              <span className="redirect-icon">
+                <SystemIcon name={redirecting.icon} size={34} />
+              </span>
+            </div>
+          </div>
+          <div className="redirect-copy">
+            <p className="redirect-message">
+              Redirecting you to <strong>{redirecting.title}</strong>, see you
+              there!
+            </p>
+            <span className="redirect-host">
+              <ExternalLink size={12} />
+              {new URL(redirecting.url).hostname.replace(/^www\./, "")}
             </span>
           </div>
-          <p className="redirect-message">
-            Redirecting you to <strong>{redirecting.title}</strong>, see you
-            there!
-          </p>
         </div>
       )}
     </div>
