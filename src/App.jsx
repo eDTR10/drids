@@ -691,8 +691,29 @@ export default function App() {
     if (match) trackVisit(match.id);
     window.open(prompt.url, "_blank", "noopener,noreferrer");
   };
+  const unlockAdmin = (token) => {
+    setAdminToken(token);
+    try {
+      sessionStorage.setItem("drids-admin-token", token);
+    } catch {
+      // Private browsing or storage disabled; admin stays unlocked for this render only.
+    }
+    setAccessCodeInput("");
+    setModal("quick-actions");
+    setToast("Admin mode unlocked.");
+  };
   const verifyAccessCode = async (e) => {
     e.preventDefault();
+    // Dev-only local bypass (see .env.example) — compiled out of production
+    // builds entirely, since import.meta.env.DEV is statically false there.
+    if (
+      import.meta.env.DEV &&
+      import.meta.env.VITE_PASSWORD &&
+      accessCodeInput.trim() === import.meta.env.VITE_PASSWORD
+    ) {
+      unlockAdmin("dev-local");
+      return;
+    }
     setVerifyingCode(true);
     setAccessCodeError("");
     try {
@@ -709,15 +730,7 @@ export default function App() {
         return;
       }
       const { auth_token } = await res.json();
-      setAdminToken(auth_token);
-      try {
-        sessionStorage.setItem("drids-admin-token", auth_token);
-      } catch {
-        // Private browsing or storage disabled; admin stays unlocked for this render only.
-      }
-      setAccessCodeInput("");
-      setModal("quick-actions");
-      setToast("Admin mode unlocked.");
+      unlockAdmin(auth_token);
     } catch {
       setAccessCodeError("Couldn't reach the server. Check your connection.");
     } finally {

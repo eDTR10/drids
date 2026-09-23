@@ -28,7 +28,10 @@ export const QUICK_PROMPT_MAX = 20;
 // Admin mode authenticates against the eTM/DTMS/EFAS backend (a real account),
 // not a locally stored secret. The Access Code field's value is sent as this
 // fixed account's password — the email itself is never shown in the UI.
-export const BACKEND_URL = "https://api.yt-jam.com";
+// VITE_BACKEND_URL lets `npm run dev` point at a local/LAN server; production
+// builds always use .env.production's value (see that file for why).
+export const BACKEND_URL =
+  import.meta.env?.VITE_BACKEND_URL || "https://api.yt-jam.com";
 export const ADMIN_LOGIN_EMAIL = "admin@dict.gov.ph";
 
 export const DEFAULT_QUICK_PROMPTS = [
