@@ -2653,4 +2653,9 @@ h1 > span {
     transition: none !important;
     animation: none !important;
   }
+  /* This glow is a small, slow color pulse, not large-scale motion, so it
+     stays looping even for reduced-motion users rather than freezing flat. */
+  .quick-search-box {
+    animation: quick-glow-pulse 4.5s ease-in-out infinite !important;
+  }
 }
