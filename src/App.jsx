@@ -1113,6 +1113,8 @@ export default function App() {
               <div className="quick-search-box">
                 <MessageCircleQuestion size={18} />
                 <input
+                  ref={searchRef}
+                  aria-label="Search systems"
                   placeholder="Tell us what you need…"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -1123,13 +1125,15 @@ export default function App() {
                     }
                   }}
                 />
-                {query && (
+                {query ? (
                   <button
                     aria-label="Clear quick search"
                     onClick={() => setQuery("")}
                   >
                     <X size={16} />
                   </button>
+                ) : (
+                  <kbd>Ctrl K</kbd>
                 )}
               </div>
               <div className="quick-suggestions">
@@ -1276,76 +1280,59 @@ export default function App() {
                       : "The right tools, right at your fingertips."}
                 </p>
               </div>
-              <button className="button primary" onClick={() => openEditor()}>
-                <Plus size={18} />
-                Add system
-              </button>
-            </div>
-            <div className="toolbar">
-              <div className="search-box">
-                <Search size={18} />
-                <input
-                  ref={searchRef}
-                  aria-label="Search systems"
-                  placeholder="Search your systems…"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-                {query ? (
-                  <button
-                    aria-label="Clear search"
-                    onClick={() => setQuery("")}
-                  >
-                    <X size={16} />
-                  </button>
-                ) : (
-                  <kbd>Ctrl K</kbd>
-                )}
-              </div>
-              <div className="toolbar-filters">
-                <label className="select-wrap">
-                  <select
-                    aria-label="Filter by category"
-                    value={category}
-                    onChange={(e) => filterByCategory(e.target.value)}
-                  >
-                    <option>All categories</option>
-                    {categories.map((c) => (
-                      <option key={c}>{c}</option>
-                    ))}
-                  </select>
-                  <ChevronDown size={14} />
-                </label>
-                <label className="select-wrap sort-select">
-                  <select
-                    aria-label="Sort systems"
-                    value={sort}
-                    onChange={(e) => setSort(e.target.value)}
-                  >
-                    <option value="custom">Default order</option>
-                    <option value="az">Name: A–Z</option>
-                    <option value="za">Name: Z–A</option>
-                  </select>
-                  <ChevronDown size={14} />
-                </label>
-                <div className="view-toggle">
-                  <button
-                    className={workspace.layout === "grid" ? "selected" : ""}
-                    aria-label="Grid view"
-                    aria-pressed={workspace.layout === "grid"}
-                    onClick={() => patch({ layout: "grid" })}
-                  >
-                    <LayoutGrid size={18} />
-                  </button>
-                  <button
-                    className={workspace.layout === "list" ? "selected" : ""}
-                    aria-label="List view"
-                    aria-pressed={workspace.layout === "list"}
-                    onClick={() => patch({ layout: "list" })}
-                  >
-                    <List size={19} />
-                  </button>
+              <div className="section-actions">
+                <div className="toolbar-filters">
+                  <label className="select-wrap">
+                    <select
+                      aria-label="Filter by category"
+                      value={category}
+                      onChange={(e) => filterByCategory(e.target.value)}
+                    >
+                      <option>All categories</option>
+                      {categories.map((c) => (
+                        <option key={c}>{c}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={14} />
+                  </label>
+                  <label className="select-wrap sort-select">
+                    <select
+                      aria-label="Sort systems"
+                      value={sort}
+                      onChange={(e) => setSort(e.target.value)}
+                    >
+                      <option value="custom">Default order</option>
+                      <option value="az">Name: A–Z</option>
+                      <option value="za">Name: Z–A</option>
+                    </select>
+                    <ChevronDown size={14} />
+                  </label>
+                  <div className="view-toggle">
+                    <button
+                      className={workspace.layout === "grid" ? "selected" : ""}
+                      aria-label="Grid view"
+                      aria-pressed={workspace.layout === "grid"}
+                      onClick={() => patch({ layout: "grid" })}
+                    >
+                      <LayoutGrid size={18} />
+                    </button>
+                    <button
+                      className={workspace.layout === "list" ? "selected" : ""}
+                      aria-label="List view"
+                      aria-pressed={workspace.layout === "list"}
+                      onClick={() => patch({ layout: "list" })}
+                    >
+                      <List size={19} />
+                    </button>
+                  </div>
                 </div>
+                <button
+                  className="button primary"
+                  onClick={() => openEditor()}
+                >
+                  <Plus size={18} />
+                  Add system
+                </button>
               </div>
             </div>
             <div
