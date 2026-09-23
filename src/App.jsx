@@ -16,10 +16,13 @@ import {
   Globe2,
   GraduationCap,
   HelpCircle,
+  KeyRound,
   LayoutGrid,
   List,
+  Lock,
   Maximize2,
   Menu,
+  MessageCircleQuestion,
   Moon,
   Pencil,
   Plus,
@@ -43,6 +46,8 @@ import {
   CARD_WIDTH_MAX,
   CARD_WIDTH_MIN,
   CATEGORY_MAX_LENGTH,
+  QUICK_PROMPT_LABEL_MAX,
+  QUICK_PROMPT_MAX,
   THEMES,
   ICONS,
   STORAGE_KEY,
@@ -50,6 +55,7 @@ import {
   isHexColor,
   isWebUrl,
   readWorkspace,
+  sha256Hex,
   validateWorkspace,
 } from "./data";
 
@@ -496,9 +502,25 @@ export default function App() {
   const [importError, setImportError] = useState("");
   const [pendingImport, setPendingImport] = useState(null);
   const [resetting, setResetting] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => {
+    try {
+      return sessionStorage.getItem("drids-admin") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [quickQuery, setQuickQuery] = useState("");
+  const [accessCodeInput, setAccessCodeInput] = useState("");
+  const [accessCodeError, setAccessCodeError] = useState("");
+  const [promptForm, setPromptForm] = useState({ label: "", url: "" });
+  const [editingPromptId, setEditingPromptId] = useState(null);
+  const [newCodeInput, setNewCodeInput] = useState("");
+  const [codeChangeMessage, setCodeChangeMessage] = useState("");
   const searchRef = useRef(null);
   const importRef = useRef(null);
   const gridRef = useRef(null);
+  const profileMenuRef = useRef(null);
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(workspace));
@@ -539,6 +561,18 @@ export default function App() {
     document.addEventListener("keydown", shortcut);
     return () => document.removeEventListener("keydown", shortcut);
   }, []);
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+    const onClick = (e) => {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(e.target)
+      )
+        setProfileMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [profileMenuOpen]);
   const patch = (change) => setWorkspace((w) => ({ ...w, ...change }));
   const startResize = (e, axis) => {
     e.preventDefault();
@@ -591,6 +625,11 @@ export default function App() {
     ...new Set(workspace.systems.map((s) => s.category).filter(Boolean)),
   ].sort((a, b) => a.localeCompare(b));
   const categoryCount = categories.length;
+  const quickMatches = quickQuery.trim()
+    ? workspace.quickPrompts.filter((p) =>
+        p.label.toLowerCase().includes(quickQuery.trim().toLowerCase()),
+      )
+    : workspace.quickPrompts;
   const openEditor = (system) => {
     setEditing(system || null);
     setModal("edit");
@@ -640,6 +679,81 @@ export default function App() {
     }));
     setModal(null);
     setToast("System removed from your dashboard.");
+  };
+  const openQuickPrompt = (prompt) => {
+    const match = workspace.systems.find((s) => s.url === prompt.url);
+    if (match) trackVisit(match.id);
+    window.open(prompt.url, "_blank", "noopener,noreferrer");
+  };
+  const verifyAccessCode = async (e) => {
+    e.preventDefault();
+    const hash = await sha256Hex(accessCodeInput.trim());
+    if (hash === workspace.adminCodeHash) {
+      setIsAdmin(true);
+      try {
+        sessionStorage.setItem("drids-admin", "1");
+      } catch {
+        // Private browsing or storage disabled; admin stays unlocked for this render only.
+      }
+      setAccessCodeInput("");
+      setAccessCodeError("");
+      setModal("quick-actions");
+      setToast("Admin mode unlocked.");
+    } else {
+      setAccessCodeError("That code doesn't match. Try again.");
+    }
+  };
+  const lockAdmin = () => {
+    setIsAdmin(false);
+    try {
+      sessionStorage.removeItem("drids-admin");
+    } catch {
+      // Nothing to clean up if storage is unavailable.
+    }
+    setToast("Admin mode locked.");
+  };
+  const resetPromptForm = () => {
+    setPromptForm({ label: "", url: "" });
+    setEditingPromptId(null);
+  };
+  const startEditPrompt = (prompt) => {
+    setPromptForm({ label: prompt.label, url: prompt.url });
+    setEditingPromptId(prompt.id);
+  };
+  const submitPromptForm = (e) => {
+    e.preventDefault();
+    const label = promptForm.label.trim();
+    const url = promptForm.url.trim();
+    if (!label || !isWebUrl(url)) return;
+    setWorkspace((w) => ({
+      ...w,
+      quickPrompts: editingPromptId
+        ? w.quickPrompts.map((p) =>
+            p.id === editingPromptId ? { ...p, label, url } : p,
+          )
+        : w.quickPrompts.length >= QUICK_PROMPT_MAX
+          ? w.quickPrompts
+          : [...w.quickPrompts, { id: crypto.randomUUID(), label, url }],
+    }));
+    resetPromptForm();
+  };
+  const removeQuickPrompt = (id) => {
+    setWorkspace((w) => ({
+      ...w,
+      quickPrompts: w.quickPrompts.filter((p) => p.id !== id),
+    }));
+    if (editingPromptId === id) resetPromptForm();
+  };
+  const submitCodeChange = async (e) => {
+    e.preventDefault();
+    const code = newCodeInput.trim();
+    if (code.length < 4) {
+      setCodeChangeMessage("Use at least 4 characters.");
+      return;
+    }
+    patch({ adminCodeHash: await sha256Hex(code) });
+    setNewCodeInput("");
+    setCodeChangeMessage("Access code updated.");
   };
   const exportWorkspace = () => {
     const url = URL.createObjectURL(
@@ -835,13 +949,66 @@ export default function App() {
                 <Moon size={18} />
               )}
             </button>
-            <button
-              className="profile-button"
-              onClick={() => setModal("help")}
-              aria-label="About DICT Region 10"
-            >
-              R10
-            </button>
+            <div className="profile-menu" ref={profileMenuRef}>
+              <button
+                className={`profile-button ${isAdmin ? "is-admin" : ""}`}
+                onClick={() => setProfileMenuOpen((o) => !o)}
+                aria-haspopup="menu"
+                aria-expanded={profileMenuOpen}
+                aria-label="Account menu"
+              >
+                {isAdmin ? <ShieldCheck size={17} /> : "R10"}
+              </button>
+              {profileMenuOpen && (
+                <div className="profile-dropdown" role="menu">
+                  <button
+                    role="menuitem"
+                    onClick={() => {
+                      setModal("help");
+                      setProfileMenuOpen(false);
+                    }}
+                  >
+                    <HelpCircle size={15} />
+                    About DICT Region 10
+                  </button>
+                  {isAdmin ? (
+                    <>
+                      <button
+                        role="menuitem"
+                        onClick={() => {
+                          setModal("quick-actions");
+                          setProfileMenuOpen(false);
+                        }}
+                      >
+                        <Sparkles size={15} />
+                        Manage quick actions
+                      </button>
+                      <button
+                        role="menuitem"
+                        onClick={() => {
+                          lockAdmin();
+                          setProfileMenuOpen(false);
+                        }}
+                      >
+                        <Lock size={15} />
+                        Lock admin mode
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      role="menuitem"
+                      onClick={() => {
+                        setModal("access-code");
+                        setProfileMenuOpen(false);
+                      }}
+                    >
+                      <KeyRound size={15} />
+                      Access Code
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </header>
         <main id="main">
@@ -861,6 +1028,53 @@ export default function App() {
               Customize
             </button>
           </section>
+          {workspace.showQuickActions && (
+            <section className="quick-actions" aria-label="Quick actions">
+              <p className="quick-actions-label">
+                What do you want to do today?
+              </p>
+              <div className="quick-search-box">
+                <MessageCircleQuestion size={18} />
+                <input
+                  placeholder="Tell us what you need…"
+                  value={quickQuery}
+                  onChange={(e) => setQuickQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && quickMatches[0]) {
+                      openQuickPrompt(quickMatches[0]);
+                      setQuickQuery("");
+                    }
+                  }}
+                />
+                {quickQuery && (
+                  <button
+                    aria-label="Clear quick search"
+                    onClick={() => setQuickQuery("")}
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+              <div className="quick-suggestions">
+                {quickMatches.slice(0, 6).map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => openQuickPrompt(p)}
+                    title={p.url}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+                {quickMatches.length === 0 && (
+                  <span className="quick-empty">
+                    {workspace.quickPrompts.length === 0
+                      ? "No quick actions yet."
+                      : "Nothing matches that."}
+                  </span>
+                )}
+              </div>
+            </section>
+          )}
           {workspace.showHero && (
           <section className="hero">
             <div className="hero-copy">
@@ -1319,6 +1533,23 @@ export default function App() {
             </p>
             <div className="setting-row">
               <div>
+                <strong>Quick actions</strong>
+                <p>“What do you want to do today?” search</p>
+              </div>
+              <button
+                className={`switch ${workspace.showQuickActions ? "on" : ""}`}
+                role="switch"
+                aria-checked={workspace.showQuickActions}
+                aria-label="Show quick actions"
+                onClick={() =>
+                  patch({ showQuickActions: !workspace.showQuickActions })
+                }
+              >
+                <span />
+              </button>
+            </div>
+            <div className="setting-row">
+              <div>
                 <strong>Hero banner</strong>
                 <p>The welcome banner and illustration</p>
               </div>
@@ -1536,6 +1767,168 @@ export default function App() {
               Back to workspace
               <ArrowRight size={16} />
             </button>
+          </div>
+        </Modal>
+      )}
+      {modal === "access-code" && (
+        <Modal
+          title="Access Code"
+          subtitle="Enter the admin code to manage quick actions."
+          onClose={() => {
+            setModal(null);
+            setAccessCodeInput("");
+            setAccessCodeError("");
+          }}
+        >
+          <form onSubmit={verifyAccessCode} className="system-form">
+            <label>
+              Access code
+              <input
+                type="password"
+                autoFocus
+                autoComplete="off"
+                value={accessCodeInput}
+                onChange={(e) => setAccessCodeInput(e.target.value)}
+              />
+            </label>
+            {accessCodeError && (
+              <p className="form-error" role="alert">
+                {accessCodeError}
+              </p>
+            )}
+            <div className="modal-actions">
+              <div className="action-spacer" />
+              <button
+                type="button"
+                className="button"
+                onClick={() => {
+                  setModal(null);
+                  setAccessCodeInput("");
+                  setAccessCodeError("");
+                }}
+              >
+                Cancel
+              </button>
+              <button className="button primary" type="submit">
+                <KeyRound size={16} />
+                Unlock
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+      {modal === "quick-actions" && (
+        <Modal
+          title="Manage quick actions"
+          subtitle="Quick questions shown in “What do you want to do today?”"
+          onClose={() => {
+            setModal(null);
+            resetPromptForm();
+            setNewCodeInput("");
+            setCodeChangeMessage("");
+          }}
+          wide
+        >
+          <div className="settings-section">
+            <h3>Quick actions</h3>
+            {workspace.quickPrompts.length > 0 ? (
+              <div className="reorder-list">
+                {workspace.quickPrompts.map((p) => (
+                  <div key={p.id}>
+                    <span style={{ flex: 1 }}>{p.label}</span>
+                    <button
+                      className="icon-button"
+                      aria-label={`Edit ${p.label}`}
+                      onClick={() => startEditPrompt(p)}
+                    >
+                      <Pencil size={15} />
+                    </button>
+                    <button
+                      className="icon-button"
+                      aria-label={`Remove ${p.label}`}
+                      onClick={() => removeQuickPrompt(p.id)}
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="settings-description">No quick actions yet.</p>
+            )}
+            <form onSubmit={submitPromptForm} className="system-form">
+              <label>
+                Question
+                <input
+                  maxLength={QUICK_PROMPT_LABEL_MAX}
+                  placeholder="e.g. I want to file a leave request"
+                  value={promptForm.label}
+                  onChange={(e) =>
+                    setPromptForm((f) => ({ ...f, label: e.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                Destination URL
+                <input
+                  type="url"
+                  placeholder="https://your-system.gov.ph"
+                  value={promptForm.url}
+                  onChange={(e) =>
+                    setPromptForm((f) => ({ ...f, url: e.target.value }))
+                  }
+                />
+              </label>
+              <div className="modal-actions">
+                {editingPromptId && (
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={resetPromptForm}
+                  >
+                    Cancel edit
+                  </button>
+                )}
+                <div className="action-spacer" />
+                <button
+                  className="button primary"
+                  type="submit"
+                  disabled={
+                    !editingPromptId &&
+                    workspace.quickPrompts.length >= QUICK_PROMPT_MAX
+                  }
+                >
+                  <Check size={16} />
+                  {editingPromptId ? "Save changes" : "Add quick action"}
+                </button>
+              </div>
+            </form>
+          </div>
+          <div className="settings-section">
+            <h3>Change access code</h3>
+            <p className="settings-description">
+              Whoever knows this code can unlock admin mode on this browser.
+            </p>
+            <form onSubmit={submitCodeChange} className="system-form">
+              <label>
+                New access code
+                <input
+                  type="password"
+                  autoComplete="off"
+                  value={newCodeInput}
+                  onChange={(e) => setNewCodeInput(e.target.value)}
+                />
+              </label>
+              {codeChangeMessage && (
+                <p className="settings-description">{codeChangeMessage}</p>
+              )}
+              <div className="modal-actions">
+                <div className="action-spacer" />
+                <button className="button primary" type="submit">
+                  Save code
+                </button>
+              </div>
+            </form>
           </div>
         </Modal>
       )}

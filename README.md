@@ -49,6 +49,12 @@ Deployment setup follows [Vite's GitHub Pages guide](https://vite.dev/guide/stat
 - Favorites and recently opened systems have dedicated sidebar filters.
 - **Customize → Export backup / Import backup** transfers the workspace as validated JSON. Import and reset require confirmation inside the application.
 
+## Quick actions and admin mode
+
+The "What do you want to do today?" bar above the hero lets people search or tap a suggestion to jump straight to a system. Suggestions are plain question/URL pairs stored on the workspace.
+
+Adding, editing, or removing suggestions requires **admin mode**: click the avatar in the top right → **Access Code**. The default code is `DICT10ADMIN`; change it immediately after first unlocking via **Manage quick actions → Change access code**. The code is hashed (SHA-256) before it's stored, and the unlocked state is kept in `sessionStorage` (cleared when the tab closes) — this is a casual deterrent for a static, backend-less site, not real authentication. Anyone with browser devtools access can bypass it, so don't rely on it to gate anything sensitive.
+
 ## Set the shared starting systems
 
 Edit `DEFAULT_SYSTEMS` in `src/data.js` to publish your organization's approved system links and descriptions. The supplied entries are starter public resources, not an inventory of internal Region 10 systems; check or replace their destinations before public rollout.

@@ -23,6 +23,45 @@ export const ICONS = [
   "briefcase",
 ];
 export const STORAGE_KEY = "drids-workspace-v1";
+export const QUICK_PROMPT_LABEL_MAX = 80;
+export const QUICK_PROMPT_MAX = 20;
+// Default admin access code is "DICT10ADMIN" (SHA-256 hashed below).
+// Change it from the admin panel once unlocked with the default code.
+export const DEFAULT_ADMIN_CODE_HASH =
+  "a9a4d2433a9f316cec6620ee90a3defa249cc65d18a8e6aa78fb48305ee90ad8";
+
+export const DEFAULT_QUICK_PROMPTS = [
+  {
+    id: "time-in",
+    label: "I want to time in",
+    url: "https://edtr10.github.io/regional/",
+  },
+  {
+    id: "route-document",
+    label: "I want to route a document",
+    url: "https://edtr10.github.io/dtms",
+  },
+  {
+    id: "check-tasks",
+    label: "I want to check my tasks",
+    url: "https://edtr10.github.io/etms/",
+  },
+  {
+    id: "book-room",
+    label: "I want to book a room",
+    url: "https://edtr10.github.io/bookings/",
+  },
+];
+
+export async function sha256Hex(text) {
+  const buf = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(text),
+  );
+  return [...new Uint8Array(buf)]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
 
 // Replace these starter resources with your region's own systems before publishing.
 export const DEFAULT_SYSTEMS = [
@@ -175,7 +214,29 @@ export function validateWorkspace(data) {
     showCovers: data.showCovers !== false,
     showHero: data.showHero !== false,
     showStats: data.showStats !== false,
+    showQuickActions: data.showQuickActions !== false,
     appearance: data.appearance === "dark" ? "dark" : "light",
+    adminCodeHash:
+      typeof data.adminCodeHash === "string" &&
+      /^[0-9a-f]{64}$/i.test(data.adminCodeHash)
+        ? data.adminCodeHash
+        : DEFAULT_ADMIN_CODE_HASH,
+    quickPrompts: (Array.isArray(data.quickPrompts)
+      ? data.quickPrompts
+      : DEFAULT_QUICK_PROMPTS
+    )
+      .filter(
+        (p) =>
+          p &&
+          typeof p.id === "string" &&
+          p.id &&
+          typeof p.label === "string" &&
+          p.label.trim() &&
+          p.label.length <= QUICK_PROMPT_LABEL_MAX &&
+          isWebUrl(p.url),
+      )
+      .map((p) => ({ id: p.id, label: p.label.trim(), url: p.url }))
+      .slice(0, QUICK_PROMPT_MAX),
     recent: Array.isArray(data.recent)
       ? [...new Set(data.recent.filter((id) => ids.has(id)))].slice(0, 12)
       : [],
@@ -193,7 +254,10 @@ export function defaultWorkspace() {
     showCovers: true,
     showHero: true,
     showStats: true,
+    showQuickActions: true,
     appearance: "light",
+    adminCodeHash: DEFAULT_ADMIN_CODE_HASH,
+    quickPrompts: DEFAULT_QUICK_PROMPTS.map((p) => ({ ...p })),
     recent: [],
   };
 }
