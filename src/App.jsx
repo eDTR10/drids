@@ -513,7 +513,6 @@ export default function App() {
   const isAdmin = !!adminToken;
   const [verifyingCode, setVerifyingCode] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [quickQuery, setQuickQuery] = useState("");
   const [accessCodeInput, setAccessCodeInput] = useState("");
   const [accessCodeError, setAccessCodeError] = useState("");
   const [promptForm, setPromptForm] = useState({ label: "", url: "" });
@@ -631,9 +630,9 @@ export default function App() {
     ...new Set(workspace.systems.map((s) => s.category).filter(Boolean)),
   ].sort((a, b) => a.localeCompare(b));
   const categoryCount = categories.length;
-  const quickMatches = quickQuery.trim()
+  const quickMatches = query.trim()
     ? workspace.quickPrompts.filter((p) =>
-        p.label.toLowerCase().includes(quickQuery.trim().toLowerCase()),
+        p.label.toLowerCase().includes(query.trim().toLowerCase()),
       )
     : workspace.quickPrompts;
   const openEditor = (system) => {
@@ -1115,19 +1114,19 @@ export default function App() {
                 <MessageCircleQuestion size={18} />
                 <input
                   placeholder="Tell us what you need…"
-                  value={quickQuery}
-                  onChange={(e) => setQuickQuery(e.target.value)}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && quickMatches[0]) {
                       openQuickPrompt(quickMatches[0]);
-                      setQuickQuery("");
+                      setQuery("");
                     }
                   }}
                 />
-                {quickQuery && (
+                {query && (
                   <button
                     aria-label="Clear quick search"
-                    onClick={() => setQuickQuery("")}
+                    onClick={() => setQuery("")}
                   >
                     <X size={16} />
                   </button>
