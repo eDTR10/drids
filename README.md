@@ -53,7 +53,9 @@ Deployment setup follows [Vite's GitHub Pages guide](https://vite.dev/guide/stat
 
 The "What do you want to do today?" bar above the hero lets people search or tap a suggestion to jump straight to a system. Suggestions are plain question/URL pairs stored on the workspace.
 
-Adding, editing, or removing suggestions requires **admin mode**: click the avatar in the top right → **Access Code**. The default code is `DICT10ADMIN`; change it immediately after first unlocking via **Manage quick actions → Change access code**. The code is hashed (SHA-256) before it's stored, and the unlocked state is kept in `sessionStorage` (cleared when the tab closes) — this is a casual deterrent for a static, backend-less site, not real authentication. Anyone with browser devtools access can bypass it, so don't rely on it to gate anything sensitive.
+Adding, editing, or removing suggestions requires **admin mode**: click the avatar in the top right → **Access Code**. Unlike the rest of the app, this one feature is backed by a real server — the eTM/DTMS/EFAS Django backend (`accounts` app, DRF token auth via djoser). The Access Code field sends whatever you type as the password for a fixed, hardcoded account (`admin@dict.gov.ph`, `role='admin'`) to `POST {BACKEND_URL}/api/v1/token/login/`; a successful login's token is kept in `sessionStorage` (cleared when the tab closes) and used to call `POST /api/v1/users/set_password/` for **Manage quick actions → Change access code**, and `POST /api/v1/token/logout/` when you lock admin mode. `BACKEND_URL` and `ADMIN_LOGIN_EMAIL` live in `src/data.js`.
+
+The default password for that account is `DICT10ADMIN` — change it immediately after first unlocking. Because this now depends on the backend being reachable and CORS-open (it currently sets `CORS_ALLOW_ALL_ORIGINS = True`), admin mode will fail closed (with a network-error message) if that server is down, unlike everything else in DRIDS, which works fully offline from localStorage.
 
 ## Set the shared starting systems
 

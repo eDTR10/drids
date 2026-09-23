@@ -6,11 +6,9 @@ import {
   CARD_WIDTH_MAX,
   CARD_WIDTH_MIN,
   CATEGORY_MAX_LENGTH,
-  DEFAULT_ADMIN_CODE_HASH,
   QUICK_PROMPT_MAX,
   defaultWorkspace,
   isWebUrl,
-  sha256Hex,
   validateWorkspace,
 } from "../src/data.js";
 
@@ -105,15 +103,10 @@ test("a backup predating showHero/showStats falls back to visible", () => {
   assert.equal(result.showHero, true);
   assert.equal(result.showStats, true);
 });
-test("default workspace ships with the default admin code and starter quick actions", () => {
+test("default workspace ships with starter quick actions", () => {
   const workspace = defaultWorkspace();
-  assert.equal(workspace.adminCodeHash, DEFAULT_ADMIN_CODE_HASH);
   assert.ok(workspace.quickPrompts.length > 0);
   for (const p of workspace.quickPrompts) assert.ok(isWebUrl(p.url));
-});
-test("sha256Hex hashes the default admin code to the stored constant", async () => {
-  assert.equal(await sha256Hex("DICT10ADMIN"), DEFAULT_ADMIN_CODE_HASH);
-  assert.notEqual(await sha256Hex("wrong-code"), DEFAULT_ADMIN_CODE_HASH);
 });
 test("quick prompts are sanitized, capped, and fall back to defaults", () => {
   const workspace = defaultWorkspace();
@@ -137,11 +130,6 @@ test("quick prompts are sanitized, capped, and fall back to defaults", () => {
     validateWorkspace(withoutPrompts).quickPrompts,
     defaultWorkspace().quickPrompts,
   );
-});
-test("a malformed admin code hash falls back to the default", () => {
-  const workspace = defaultWorkspace();
-  workspace.adminCodeHash = "not-a-hash";
-  assert.equal(validateWorkspace(workspace).adminCodeHash, DEFAULT_ADMIN_CODE_HASH);
 });
 test("unknown recent visits are dropped and empty workspaces are supported", () => {
   const workspace = defaultWorkspace();

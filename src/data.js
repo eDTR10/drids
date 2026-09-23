@@ -25,10 +25,11 @@ export const ICONS = [
 export const STORAGE_KEY = "drids-workspace-v1";
 export const QUICK_PROMPT_LABEL_MAX = 80;
 export const QUICK_PROMPT_MAX = 20;
-// Default admin access code is "DICT10ADMIN" (SHA-256 hashed below).
-// Change it from the admin panel once unlocked with the default code.
-export const DEFAULT_ADMIN_CODE_HASH =
-  "a9a4d2433a9f316cec6620ee90a3defa249cc65d18a8e6aa78fb48305ee90ad8";
+// Admin mode authenticates against the eTM/DTMS/EFAS backend (a real account),
+// not a locally stored secret. The Access Code field's value is sent as this
+// fixed account's password — the email itself is never shown in the UI.
+export const BACKEND_URL = "https://api.yt-jam.com";
+export const ADMIN_LOGIN_EMAIL = "admin@dict.gov.ph";
 
 export const DEFAULT_QUICK_PROMPTS = [
   {
@@ -57,16 +58,6 @@ export const DEFAULT_QUICK_PROMPTS = [
     url: "https://edtr10.github.io/kms/",
   },
 ];
-
-export async function sha256Hex(text) {
-  const buf = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(text),
-  );
-  return [...new Uint8Array(buf)]
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
 
 // Replace these starter resources with your region's own systems before publishing.
 export const DEFAULT_SYSTEMS = [
@@ -221,11 +212,6 @@ export function validateWorkspace(data) {
     showStats: data.showStats !== false,
     showQuickActions: data.showQuickActions !== false,
     appearance: data.appearance === "dark" ? "dark" : "light",
-    adminCodeHash:
-      typeof data.adminCodeHash === "string" &&
-      /^[0-9a-f]{64}$/i.test(data.adminCodeHash)
-        ? data.adminCodeHash
-        : DEFAULT_ADMIN_CODE_HASH,
     quickPrompts: (Array.isArray(data.quickPrompts)
       ? data.quickPrompts
       : DEFAULT_QUICK_PROMPTS
@@ -261,7 +247,6 @@ export function defaultWorkspace() {
     showStats: false,
     showQuickActions: true,
     appearance: "light",
-    adminCodeHash: DEFAULT_ADMIN_CODE_HASH,
     quickPrompts: DEFAULT_QUICK_PROMPTS.map((p) => ({ ...p })),
     recent: [],
   };

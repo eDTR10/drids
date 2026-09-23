@@ -41,6 +41,8 @@ import {
   ChartNoAxesCombined,
 } from "lucide-react";
 import {
+  ADMIN_LOGIN_EMAIL,
+  BACKEND_URL,
   CARD_HEIGHT_MAX,
   CARD_HEIGHT_MIN,
   CARD_WIDTH_MAX,
@@ -55,7 +57,6 @@ import {
   isHexColor,
   isWebUrl,
   readWorkspace,
-  sha256Hex,
   validateWorkspace,
 } from "./data";
 
@@ -502,13 +503,15 @@ export default function App() {
   const [importError, setImportError] = useState("");
   const [pendingImport, setPendingImport] = useState(null);
   const [resetting, setResetting] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(() => {
+  const [adminToken, setAdminToken] = useState(() => {
     try {
-      return sessionStorage.getItem("drids-admin") === "1";
+      return sessionStorage.getItem("drids-admin-token") || "";
     } catch {
-      return false;
+      return "";
     }
   });
+  const isAdmin = !!adminToken;
+  const [verifyingCode, setVerifyingCode] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [quickQuery, setQuickQuery] = useState("");
   const [accessCodeInput, setAccessCodeInput] = useState("");
@@ -516,8 +519,10 @@ export default function App() {
   const [promptForm, setPromptForm] = useState({ label: "", url: "" });
   const [editingPromptId, setEditingPromptId] = useState(null);
   const [editPromptForm, setEditPromptForm] = useState({ label: "", url: "" });
+  const [currentCodeInput, setCurrentCodeInput] = useState("");
   const [newCodeInput, setNewCodeInput] = useState("");
   const [codeChangeMessage, setCodeChangeMessage] = useState("");
+  const [changingCode, setChangingCode] = useState(false);
   const searchRef = useRef(null);
   const importRef = useRef(null);
   const gridRef = useRef(null);
@@ -688,26 +693,47 @@ export default function App() {
   };
   const verifyAccessCode = async (e) => {
     e.preventDefault();
-    const hash = await sha256Hex(accessCodeInput.trim());
-    if (hash === workspace.adminCodeHash) {
-      setIsAdmin(true);
+    setVerifyingCode(true);
+    setAccessCodeError("");
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/v1/token/login/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: ADMIN_LOGIN_EMAIL,
+          password: accessCodeInput.trim(),
+        }),
+      });
+      if (!res.ok) {
+        setAccessCodeError("That code doesn't match. Try again.");
+        return;
+      }
+      const { auth_token } = await res.json();
+      setAdminToken(auth_token);
       try {
-        sessionStorage.setItem("drids-admin", "1");
+        sessionStorage.setItem("drids-admin-token", auth_token);
       } catch {
         // Private browsing or storage disabled; admin stays unlocked for this render only.
       }
       setAccessCodeInput("");
-      setAccessCodeError("");
       setModal("quick-actions");
       setToast("Admin mode unlocked.");
-    } else {
-      setAccessCodeError("That code doesn't match. Try again.");
+    } catch {
+      setAccessCodeError("Couldn't reach the server. Check your connection.");
+    } finally {
+      setVerifyingCode(false);
     }
   };
   const lockAdmin = () => {
-    setIsAdmin(false);
+    fetch(`${BACKEND_URL}/api/v1/token/logout/`, {
+      method: "POST",
+      headers: { Authorization: `Token ${adminToken}` },
+    }).catch(() => {
+      // Best-effort server-side invalidation; local lock proceeds regardless.
+    });
+    setAdminToken("");
     try {
-      sessionStorage.removeItem("drids-admin");
+      sessionStorage.removeItem("drids-admin-token");
     } catch {
       // Nothing to clean up if storage is unavailable.
     }
@@ -755,14 +781,44 @@ export default function App() {
   };
   const submitCodeChange = async (e) => {
     e.preventDefault();
-    const code = newCodeInput.trim();
-    if (code.length < 4) {
+    const current = currentCodeInput.trim();
+    const next = newCodeInput.trim();
+    if (next.length < 4) {
       setCodeChangeMessage("Use at least 4 characters.");
       return;
     }
-    patch({ adminCodeHash: await sha256Hex(code) });
-    setNewCodeInput("");
-    setCodeChangeMessage("Access code updated.");
+    setChangingCode(true);
+    setCodeChangeMessage("");
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/v1/users/set_password/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Token ${adminToken}`,
+        },
+        body: JSON.stringify({
+          current_password: current,
+          new_password: next,
+          re_new_password: next,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setCodeChangeMessage(
+          body.current_password?.[0] ||
+            body.new_password?.[0] ||
+            "Couldn't update the code. Check the current code and try again.",
+        );
+        return;
+      }
+      setCurrentCodeInput("");
+      setNewCodeInput("");
+      setCodeChangeMessage("Access code updated.");
+    } catch {
+      setCodeChangeMessage("Couldn't reach the server. Check your connection.");
+    } finally {
+      setChangingCode(false);
+    }
   };
   const exportWorkspace = () => {
     const url = URL.createObjectURL(
@@ -1818,9 +1874,13 @@ export default function App() {
               >
                 Cancel
               </button>
-              <button className="button primary" type="submit">
+              <button
+                className="button primary"
+                type="submit"
+                disabled={verifyingCode}
+              >
                 <KeyRound size={16} />
-                Unlock
+                {verifyingCode ? "Checking…" : "Unlock"}
               </button>
             </div>
           </form>
@@ -1834,6 +1894,7 @@ export default function App() {
             setModal(null);
             setPromptForm({ label: "", url: "" });
             cancelEditPrompt();
+            setCurrentCodeInput("");
             setNewCodeInput("");
             setCodeChangeMessage("");
           }}
@@ -1957,6 +2018,15 @@ export default function App() {
             </p>
             <form onSubmit={submitCodeChange} className="system-form">
               <label>
+                Current access code
+                <input
+                  type="password"
+                  autoComplete="off"
+                  value={currentCodeInput}
+                  onChange={(e) => setCurrentCodeInput(e.target.value)}
+                />
+              </label>
+              <label>
                 New access code
                 <input
                   type="password"
@@ -1970,8 +2040,12 @@ export default function App() {
               )}
               <div className="modal-actions">
                 <div className="action-spacer" />
-                <button className="button primary" type="submit">
-                  Save code
+                <button
+                  className="button primary"
+                  type="submit"
+                  disabled={changingCode}
+                >
+                  {changingCode ? "Saving…" : "Save code"}
                 </button>
               </div>
             </form>
