@@ -88,13 +88,21 @@ test("custom layout accepts a card size clamped to the min/max bounds", () => {
   assert.equal(result.cardWidth, CARD_WIDTH_MAX);
   assert.equal(result.cardHeight, CARD_HEIGHT_MIN);
 });
-test("hero and stats sections default on and can be hidden independently", () => {
+test("hero and stats sections are hidden by default but can be shown independently", () => {
   const workspace = defaultWorkspace();
-  assert.equal(workspace.showHero, true);
-  assert.equal(workspace.showStats, true);
-  workspace.showHero = false;
+  assert.equal(workspace.showHero, false);
+  assert.equal(workspace.showStats, false);
+  workspace.showHero = true;
   const result = validateWorkspace(workspace);
-  assert.equal(result.showHero, false);
+  assert.equal(result.showHero, true);
+  assert.equal(result.showStats, false);
+});
+test("a backup predating showHero/showStats falls back to visible", () => {
+  const workspace = defaultWorkspace();
+  delete workspace.showHero;
+  delete workspace.showStats;
+  const result = validateWorkspace(workspace);
+  assert.equal(result.showHero, true);
   assert.equal(result.showStats, true);
 });
 test("default workspace ships with the default admin code and starter quick actions", () => {

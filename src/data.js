@@ -51,6 +51,11 @@ export const DEFAULT_QUICK_PROMPTS = [
     label: "I want to book a room",
     url: "https://edtr10.github.io/bookings/",
   },
+  {
+    id: "knowledge-management",
+    label: "I want to access the knowledge management system",
+    url: "https://edtr10.github.io/kms/",
+  },
 ];
 
 export async function sha256Hex(text) {
@@ -112,7 +117,7 @@ export const DEFAULT_SYSTEMS = [
   {
     id: "kms",
     title: "KMS",
-    description: "DICT 10 Knowledge Management System.",
+    description: "Electronic Knowledge Management System.",
     url: "https://edtr10.github.io/kms/",
     category: "Internal Systems",
     icon: "database",
@@ -252,8 +257,8 @@ export function defaultWorkspace() {
     cardWidth: CARD_WIDTH_DEFAULT,
     cardHeight: CARD_HEIGHT_DEFAULT,
     showCovers: true,
-    showHero: true,
-    showStats: true,
+    showHero: false,
+    showStats: false,
     showQuickActions: true,
     appearance: "light",
     adminCodeHash: DEFAULT_ADMIN_CODE_HASH,
