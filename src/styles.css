@@ -2692,12 +2692,16 @@ h1 > span {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 1.5px solid color-mix(in srgb, var(--ink, var(--accent)), transparent 45%);
+  border: 2px solid var(--ink, var(--accent));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--ink, var(--accent)), transparent 55%);
   opacity: 0;
   animation: redirect-ring 1.8s ease-out infinite;
 }
 .redirect-ring.ring-2 {
   animation-delay: 0.6s;
+}
+.redirect-ring.ring-3 {
+  animation-delay: 1.2s;
 }
 .redirect-halo {
   position: absolute;
@@ -2712,26 +2716,6 @@ h1 > span {
   filter: blur(7px);
   opacity: 0.45;
   animation: redirect-spin 1.6s linear infinite;
-}
-/* Real progress, timed to match the tab actually opening. */
-.redirect-progress {
-  position: absolute;
-  inset: 0;
-  transform: rotate(-90deg);
-}
-.redirect-progress circle {
-  fill: none;
-  stroke-width: 2.5;
-}
-.redirect-track {
-  stroke: color-mix(in srgb, var(--ink, var(--accent)), transparent 85%);
-}
-.redirect-bar {
-  stroke: var(--ink, var(--accent));
-  stroke-linecap: round;
-  stroke-dasharray: 283;
-  stroke-dashoffset: 283;
-  animation: redirect-progress 1.15s ease-in-out forwards;
 }
 .redirect-icon {
   position: relative;
@@ -2773,6 +2757,67 @@ h1 > span {
   color: var(--text-secondary);
   background: color-mix(in srgb, var(--ink, var(--accent)), transparent 92%);
   border: 1px solid color-mix(in srgb, var(--ink, var(--accent)), transparent 78%);
+}
+/* Staged status lines, swapped purely in CSS so the launch reads as a
+   sequence of steps rather than one flat wait. */
+.redirect-status {
+  position: relative;
+  display: block;
+  width: 240px;
+  max-width: 72vw;
+  height: 15px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.redirect-status span {
+  position: absolute;
+  left: 0;
+  right: 0;
+  opacity: 0;
+  animation: redirect-status-swap 0.78s ease both;
+}
+.redirect-status span:nth-child(2) {
+  animation-delay: 0.66s;
+}
+.redirect-status span:nth-child(3) {
+  animation-delay: 1.32s;
+  animation-name: redirect-status-hold;
+}
+.redirect-track {
+  position: relative;
+  display: block;
+  width: 240px;
+  max-width: 72vw;
+  height: 4px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--ink, var(--accent)), transparent 86%);
+}
+.redirect-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  transform-origin: left;
+  transform: scaleX(0);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--ink, var(--accent)), transparent 35%),
+    var(--ink, var(--accent))
+  );
+  animation: redirect-load 2s ease-out forwards;
+}
+.redirect-track::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--surface), transparent 40%),
+    transparent
+  );
+  animation: redirect-shimmer 1.1s linear infinite;
 }
 @keyframes redirect-fade-in {
   from {
@@ -2845,9 +2890,60 @@ h1 > span {
     transform: rotate(360deg);
   }
 }
-@keyframes redirect-progress {
-  to {
-    stroke-dashoffset: 0;
+/* Deliberately uneven — a steady sweep reads as a dumb timer, whereas
+   bursts and short stalls read like something actually loading. */
+@keyframes redirect-load {
+  0% {
+    transform: scaleX(0);
+  }
+  18% {
+    transform: scaleX(0.32);
+  }
+  34% {
+    transform: scaleX(0.4);
+  }
+  56% {
+    transform: scaleX(0.68);
+  }
+  72% {
+    transform: scaleX(0.76);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+@keyframes redirect-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+@keyframes redirect-status-swap {
+  0% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  22%,
+  74% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+}
+@keyframes redirect-status-hold {
+  0% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  30%,
+  100% {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 @keyframes redirect-icon-float {
@@ -2884,9 +2980,16 @@ h1 > span {
     animation: quick-glow-pulse 4.5s ease-in-out infinite !important;
   }
   /* The warp animation is exactly the kind of motion this setting exists to
-     stop, so it stays off — but the progress ring would otherwise freeze at 0%
-     and read as stuck, so draw it complete instead. */
-  .redirect-bar {
-    stroke-dashoffset: 0;
+     stop, so it stays off. But these two are driven entirely by their
+     keyframes, so without them the bar freezes empty and every status line
+     sits at opacity 0 — show a filled bar and the final line instead. */
+  .redirect-fill {
+    transform: scaleX(1);
+  }
+  .redirect-status span {
+    opacity: 0;
+  }
+  .redirect-status span:last-child {
+    opacity: 1;
   }
 }

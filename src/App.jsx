@@ -657,12 +657,12 @@ export default function App() {
     trackVisit(system.id);
     setRedirecting(system);
     setRedirectLeaving(false);
-    // Keep in sync with the redirect-bar progress animation in styles.css.
+    // Keep in sync with the redirect-fill / redirect-status timings in styles.css.
     setTimeout(() => {
       window.open(system.url, "_blank", "noopener,noreferrer");
       setRedirectLeaving(true);
       setTimeout(() => setRedirecting(null), 340);
-    }, 1150);
+    }, 2000);
   };
   const move = (id, direction) =>
     setWorkspace((w) => {
@@ -2090,15 +2090,8 @@ export default function App() {
             <div className="redirect-portal">
               <span className="redirect-ring ring-1" aria-hidden="true" />
               <span className="redirect-ring ring-2" aria-hidden="true" />
+              <span className="redirect-ring ring-3" aria-hidden="true" />
               <span className="redirect-halo" aria-hidden="true" />
-              <svg
-                className="redirect-progress"
-                viewBox="0 0 100 100"
-                aria-hidden="true"
-              >
-                <circle className="redirect-track" cx="50" cy="50" r="45" />
-                <circle className="redirect-bar" cx="50" cy="50" r="45" />
-              </svg>
               <span className="redirect-icon">
                 <SystemIcon name={redirecting.icon} size={34} />
               </span>
@@ -2112,6 +2105,14 @@ export default function App() {
             <span className="redirect-host">
               <ExternalLink size={12} />
               {new URL(redirecting.url).hostname.replace(/^www\./, "")}
+            </span>
+            <span className="redirect-status" aria-hidden="true">
+              <span>Preparing your workspace…</span>
+              <span>Establishing connection…</span>
+              <span>Almost there…</span>
+            </span>
+            <span className="redirect-track" aria-hidden="true">
+              <span className="redirect-fill" />
             </span>
           </div>
         </div>
