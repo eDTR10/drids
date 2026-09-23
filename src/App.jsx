@@ -515,6 +515,7 @@ export default function App() {
   const [accessCodeError, setAccessCodeError] = useState("");
   const [promptForm, setPromptForm] = useState({ label: "", url: "" });
   const [editingPromptId, setEditingPromptId] = useState(null);
+  const [editPromptForm, setEditPromptForm] = useState({ label: "", url: "" });
   const [newCodeInput, setNewCodeInput] = useState("");
   const [codeChangeMessage, setCodeChangeMessage] = useState("");
   const searchRef = useRef(null);
@@ -712,37 +713,45 @@ export default function App() {
     }
     setToast("Admin mode locked.");
   };
-  const resetPromptForm = () => {
-    setPromptForm({ label: "", url: "" });
-    setEditingPromptId(null);
-  };
-  const startEditPrompt = (prompt) => {
-    setPromptForm({ label: prompt.label, url: prompt.url });
-    setEditingPromptId(prompt.id);
-  };
-  const submitPromptForm = (e) => {
+  const submitAddPrompt = (e) => {
     e.preventDefault();
     const label = promptForm.label.trim();
     const url = promptForm.url.trim();
+    if (!label || !isWebUrl(url) || workspace.quickPrompts.length >= QUICK_PROMPT_MAX)
+      return;
+    setWorkspace((w) => ({
+      ...w,
+      quickPrompts: [...w.quickPrompts, { id: crypto.randomUUID(), label, url }],
+    }));
+    setPromptForm({ label: "", url: "" });
+  };
+  const startEditPrompt = (prompt) => {
+    setEditingPromptId(prompt.id);
+    setEditPromptForm({ label: prompt.label, url: prompt.url });
+  };
+  const cancelEditPrompt = () => {
+    setEditingPromptId(null);
+    setEditPromptForm({ label: "", url: "" });
+  };
+  const submitEditPrompt = (e) => {
+    e.preventDefault();
+    const label = editPromptForm.label.trim();
+    const url = editPromptForm.url.trim();
     if (!label || !isWebUrl(url)) return;
     setWorkspace((w) => ({
       ...w,
-      quickPrompts: editingPromptId
-        ? w.quickPrompts.map((p) =>
-            p.id === editingPromptId ? { ...p, label, url } : p,
-          )
-        : w.quickPrompts.length >= QUICK_PROMPT_MAX
-          ? w.quickPrompts
-          : [...w.quickPrompts, { id: crypto.randomUUID(), label, url }],
+      quickPrompts: w.quickPrompts.map((p) =>
+        p.id === editingPromptId ? { ...p, label, url } : p,
+      ),
     }));
-    resetPromptForm();
+    cancelEditPrompt();
   };
   const removeQuickPrompt = (id) => {
     setWorkspace((w) => ({
       ...w,
       quickPrompts: w.quickPrompts.filter((p) => p.id !== id),
     }));
-    if (editingPromptId === id) resetPromptForm();
+    if (editingPromptId === id) cancelEditPrompt();
   };
   const submitCodeChange = async (e) => {
     e.preventDefault();
@@ -1823,7 +1832,8 @@ export default function App() {
           subtitle="Quick questions shown in “What do you want to do today?”"
           onClose={() => {
             setModal(null);
-            resetPromptForm();
+            setPromptForm({ label: "", url: "" });
+            cancelEditPrompt();
             setNewCodeInput("");
             setCodeChangeMessage("");
           }}
@@ -1831,32 +1841,80 @@ export default function App() {
         >
           <div className="settings-section">
             <h3>Quick actions</h3>
-            {workspace.quickPrompts.length > 0 ? (
+            <p className="settings-description">
+              {workspace.quickPrompts.length}/{QUICK_PROMPT_MAX} added.
+            </p>
+            {workspace.quickPrompts.length > 0 && (
               <div className="reorder-list">
-                {workspace.quickPrompts.map((p) => (
-                  <div key={p.id}>
-                    <span style={{ flex: 1 }}>{p.label}</span>
-                    <button
-                      className="icon-button"
-                      aria-label={`Edit ${p.label}`}
-                      onClick={() => startEditPrompt(p)}
+                {workspace.quickPrompts.map((p) =>
+                  editingPromptId === p.id ? (
+                    <form
+                      key={p.id}
+                      onSubmit={submitEditPrompt}
+                      className="quick-prompt-edit-row"
                     >
-                      <Pencil size={15} />
-                    </button>
-                    <button
-                      className="icon-button"
-                      aria-label={`Remove ${p.label}`}
-                      onClick={() => removeQuickPrompt(p.id)}
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                ))}
+                      <input
+                        autoFocus
+                        maxLength={QUICK_PROMPT_LABEL_MAX}
+                        aria-label="Question"
+                        value={editPromptForm.label}
+                        onChange={(e) =>
+                          setEditPromptForm((f) => ({
+                            ...f,
+                            label: e.target.value,
+                          }))
+                        }
+                      />
+                      <input
+                        type="url"
+                        aria-label="Destination URL"
+                        value={editPromptForm.url}
+                        onChange={(e) =>
+                          setEditPromptForm((f) => ({
+                            ...f,
+                            url: e.target.value,
+                          }))
+                        }
+                      />
+                      <button
+                        className="icon-button"
+                        type="submit"
+                        aria-label="Save changes"
+                      >
+                        <Check size={15} />
+                      </button>
+                      <button
+                        className="icon-button"
+                        type="button"
+                        aria-label="Cancel edit"
+                        onClick={cancelEditPrompt}
+                      >
+                        <X size={15} />
+                      </button>
+                    </form>
+                  ) : (
+                    <div key={p.id}>
+                      <span style={{ flex: 1 }}>{p.label}</span>
+                      <button
+                        className="icon-button"
+                        aria-label={`Edit ${p.label}`}
+                        onClick={() => startEditPrompt(p)}
+                      >
+                        <Pencil size={15} />
+                      </button>
+                      <button
+                        className="icon-button"
+                        aria-label={`Remove ${p.label}`}
+                        onClick={() => removeQuickPrompt(p.id)}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  ),
+                )}
               </div>
-            ) : (
-              <p className="settings-description">No quick actions yet.</p>
             )}
-            <form onSubmit={submitPromptForm} className="system-form">
+            <form onSubmit={submitAddPrompt} className="system-form">
               <label>
                 Question
                 <input
@@ -1880,26 +1938,14 @@ export default function App() {
                 />
               </label>
               <div className="modal-actions">
-                {editingPromptId && (
-                  <button
-                    type="button"
-                    className="text-button"
-                    onClick={resetPromptForm}
-                  >
-                    Cancel edit
-                  </button>
-                )}
                 <div className="action-spacer" />
                 <button
                   className="button primary"
                   type="submit"
-                  disabled={
-                    !editingPromptId &&
-                    workspace.quickPrompts.length >= QUICK_PROMPT_MAX
-                  }
+                  disabled={workspace.quickPrompts.length >= QUICK_PROMPT_MAX}
                 >
-                  <Check size={16} />
-                  {editingPromptId ? "Save changes" : "Add quick action"}
+                  <Plus size={16} />
+                  Add quick action
                 </button>
               </div>
             </form>

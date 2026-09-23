@@ -497,6 +497,7 @@ h1 > span {
   margin-bottom: 10px;
 }
 .quick-search-box {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -506,6 +507,29 @@ h1 > span {
   padding: 0 12px;
   height: 40px;
   color: var(--text-secondary);
+  animation: quick-glow-pulse 4.5s ease-in-out infinite;
+}
+@keyframes quick-glow-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--accent), transparent 35%),
+      0 0 14px 2px color-mix(in srgb, var(--accent), transparent 65%);
+  }
+  33% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, #4fb8ff, transparent 35%),
+      0 0 20px 4px color-mix(in srgb, #4fb8ff, transparent 45%);
+  }
+  66% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, #ffb238, transparent 35%),
+      0 0 20px 4px color-mix(in srgb, #ffb238, transparent 45%);
+  }
+}
+.quick-search-box:focus-within {
+  animation-play-state: paused;
+  box-shadow: 0 0 0 2px var(--accent);
 }
 .quick-search-box input {
   border: 0;
@@ -1865,6 +1889,23 @@ h1 > span {
 }
 .reorder-list > div > span:nth-child(2) {
   flex: 1;
+}
+.quick-prompt-edit-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+}
+.quick-prompt-edit-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface-alt);
+  color: var(--text);
+  font-size: 11px;
 }
 .reorder-icon {
   background: var(--cover);
