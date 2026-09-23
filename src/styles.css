@@ -2614,6 +2614,102 @@ h1 > span {
     font-size: 7px;
   }
 }
+.redirect-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  padding: 20px;
+  text-align: center;
+  background: color-mix(in srgb, var(--page-bg), transparent 4%);
+  backdrop-filter: blur(10px);
+  animation: redirect-fade-in 0.25s ease;
+}
+.redirect-overlay.leaving {
+  animation: redirect-fade-out 0.28s ease forwards;
+}
+.redirect-portal {
+  position: relative;
+  width: 130px;
+  height: 130px;
+  display: grid;
+  place-items: center;
+}
+.redirect-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--ink, var(--accent));
+  opacity: 0;
+  animation: redirect-ring 1.6s ease-out infinite;
+}
+.redirect-ring.ring-2 {
+  animation-delay: 0.35s;
+}
+.redirect-ring.ring-3 {
+  animation-delay: 0.7s;
+}
+.redirect-icon {
+  position: relative;
+  z-index: 1;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--cover, var(--surface));
+  color: var(--ink, var(--accent));
+  box-shadow: 0 14px 34px rgba(20, 30, 50, 0.22);
+  animation: redirect-icon-pulse 1.1s ease-in-out infinite;
+}
+.redirect-message {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  max-width: 320px;
+}
+.redirect-message strong {
+  color: var(--ink, var(--accent));
+}
+@keyframes redirect-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes redirect-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes redirect-ring {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.75;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+@keyframes redirect-icon-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

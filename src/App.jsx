@@ -503,6 +503,8 @@ export default function App() {
   const [importError, setImportError] = useState("");
   const [pendingImport, setPendingImport] = useState(null);
   const [resetting, setResetting] = useState(false);
+  const [redirecting, setRedirecting] = useState(null);
+  const [redirectLeaving, setRedirectLeaving] = useState(false);
   const [adminToken, setAdminToken] = useState(() => {
     try {
       return sessionStorage.getItem("drids-admin-token") || "";
@@ -651,6 +653,16 @@ export default function App() {
       ...w,
       recent: [id, ...w.recent.filter((x) => x !== id)].slice(0, 12),
     }));
+  const openSystem = (system) => {
+    trackVisit(system.id);
+    setRedirecting(system);
+    setRedirectLeaving(false);
+    setTimeout(() => {
+      window.open(system.url, "_blank", "noopener,noreferrer");
+      setRedirectLeaving(true);
+      setTimeout(() => setRedirecting(null), 280);
+    }, 900);
+  };
   const move = (id, direction) =>
     setWorkspace((w) => {
       const systems = [...w.systems];
@@ -1382,7 +1394,10 @@ export default function App() {
                     href={system.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={() => trackVisit(system.id)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      openSystem(system);
+                    }}
                     aria-label={`Open ${system.title} in a new tab`}
                   >
                     {workspace.showCovers && <Cover system={system} />}
@@ -2050,6 +2065,27 @@ export default function App() {
             </form>
           </div>
         </Modal>
+      )}
+      {redirecting && (
+        <div
+          className={`redirect-overlay ${redirectLeaving ? "leaving" : ""} ${themeClass(redirecting.theme)}`}
+          style={themeVars(redirecting.theme)}
+          role="status"
+          aria-live="polite"
+        >
+          <div className="redirect-portal">
+            <span className="redirect-ring ring-1" />
+            <span className="redirect-ring ring-2" />
+            <span className="redirect-ring ring-3" />
+            <span className="redirect-icon">
+              <SystemIcon name={redirecting.icon} size={36} />
+            </span>
+          </div>
+          <p className="redirect-message">
+            Redirecting you to <strong>{redirecting.title}</strong>, see you
+            there!
+          </p>
+        </div>
       )}
     </div>
   );
