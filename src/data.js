@@ -173,6 +173,8 @@ export function validateWorkspace(data) {
       CARD_HEIGHT_DEFAULT,
     ),
     showCovers: data.showCovers !== false,
+    showHero: data.showHero !== false,
+    showStats: data.showStats !== false,
     appearance: data.appearance === "dark" ? "dark" : "light",
     recent: Array.isArray(data.recent)
       ? [...new Set(data.recent.filter((id) => ids.has(id)))].slice(0, 12)
@@ -189,6 +191,8 @@ export function defaultWorkspace() {
     cardWidth: CARD_WIDTH_DEFAULT,
     cardHeight: CARD_HEIGHT_DEFAULT,
     showCovers: true,
+    showHero: true,
+    showStats: true,
     appearance: "light",
     recent: [],
   };

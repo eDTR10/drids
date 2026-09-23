@@ -85,6 +85,15 @@ test("custom layout accepts a card size clamped to the min/max bounds", () => {
   assert.equal(result.cardWidth, CARD_WIDTH_MAX);
   assert.equal(result.cardHeight, CARD_HEIGHT_MIN);
 });
+test("hero and stats sections default on and can be hidden independently", () => {
+  const workspace = defaultWorkspace();
+  assert.equal(workspace.showHero, true);
+  assert.equal(workspace.showStats, true);
+  workspace.showHero = false;
+  const result = validateWorkspace(workspace);
+  assert.equal(result.showHero, false);
+  assert.equal(result.showStats, true);
+});
 test("unknown recent visits are dropped and empty workspaces are supported", () => {
   const workspace = defaultWorkspace();
   workspace.recent = ["deleted", "edtr", "edtr"];

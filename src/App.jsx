@@ -861,6 +861,7 @@ export default function App() {
               Customize
             </button>
           </section>
+          {workspace.showHero && (
           <section className="hero">
             <div className="hero-copy">
               <span className="hero-kicker">
@@ -920,6 +921,8 @@ export default function App() {
               DRIDS <span>/ 10</span>
             </div>
           </section>
+          )}
+          {workspace.showStats && (
           <section className="stats" aria-label="Workspace statistics">
             <div>
               <span className="stat-icon">
@@ -960,6 +963,7 @@ export default function App() {
               <span className="stat-caption">Everything organized</span>
             </div>
           </section>
+          )}
           {storageError && (
             <div className="storage-error" role="alert">
               {storageError}
@@ -1303,6 +1307,42 @@ export default function App() {
                 aria-checked={workspace.showCovers}
                 aria-label="Show cover artwork"
                 onClick={() => patch({ showCovers: !workspace.showCovers })}
+              >
+                <span />
+              </button>
+            </div>
+          </div>
+          <div className="settings-section">
+            <h3>Overview page sections</h3>
+            <p className="settings-description">
+              Show or hide areas at the top of your Overview.
+            </p>
+            <div className="setting-row">
+              <div>
+                <strong>Hero banner</strong>
+                <p>The welcome banner and illustration</p>
+              </div>
+              <button
+                className={`switch ${workspace.showHero ? "on" : ""}`}
+                role="switch"
+                aria-checked={workspace.showHero}
+                aria-label="Show hero banner"
+                onClick={() => patch({ showHero: !workspace.showHero })}
+              >
+                <span />
+              </button>
+            </div>
+            <div className="setting-row">
+              <div>
+                <strong>Workspace stats</strong>
+                <p>Connected systems, favorites, and categories</p>
+              </div>
+              <button
+                className={`switch ${workspace.showStats ? "on" : ""}`}
+                role="switch"
+                aria-checked={workspace.showStats}
+                aria-label="Show workspace stats"
+                onClick={() => patch({ showStats: !workspace.showStats })}
               >
                 <span />
               </button>
