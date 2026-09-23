@@ -507,6 +507,9 @@ h1 > span {
   padding: 0 12px;
   height: 40px;
   color: var(--text-secondary);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent), transparent 35%),
+    0 0 14px 2px color-mix(in srgb, var(--accent), transparent 65%);
   animation: quick-glow-pulse 4.5s ease-in-out infinite;
 }
 @keyframes quick-glow-pulse {
@@ -530,6 +533,8 @@ h1 > span {
 .quick-search-box:focus-within {
   animation-play-state: paused;
   box-shadow: 0 0 0 2px var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 .quick-search-box input {
   border: 0;
@@ -542,10 +547,6 @@ h1 > span {
 }
 .quick-search-box input::placeholder {
   color: var(--text-tertiary);
-}
-.quick-search-box:focus-within {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
 }
 .quick-search-box button {
   padding: 0;
